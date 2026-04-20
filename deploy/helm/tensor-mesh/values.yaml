@@ -1,0 +1,10 @@
+redis:
+  image: redis:7-alpine
+  port: 6379
+
+scheduler:
+  image: tensormesh/kube-scheduler:latest
+  replicas: 1
+
+ebpfDaemon:
+  image: tensormesh/ebpf-daemon:latest

@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package tensormesh.telemetry;
+option go_package = "tensormesh/pkg/proto";
+
+// Represents a telemetry payload from a single node
+message NodeState {
+    string node_id = 1;
+    
+    // PCIe/NVLink link saturation (0.0 to 1.0)
+    map<string, float> link_saturation = 2;
+    
+    // GPU VRAM fragmentation index (0.0 to 1.0, where 1.0 is highly fragmented)
+    float vram_fragmentation = 3;
+    
+    // Unix timestamp of the probe
+    int64 timestamp = 4;
+}
+
+message Ack {
+    bool received = 1;
+}
+
+service TelemetryService {
+    // eBPF daemon streams real-time hardware metrics to the centralized cache/scheduler
+    rpc StreamNodeState(stream NodeState) returns (stream Ack) {}
+}

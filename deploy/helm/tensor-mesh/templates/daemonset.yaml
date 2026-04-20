@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: tensormesh-ebpf-daemon
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: tensormesh-ebpf
+  template:
+    metadata:
+      labels:
+        app: tensormesh-ebpf
+    spec:
+      hostNetwork: true
+      hostPID: true
+      nodeSelector:
+        # Deploy only on nodes with NVIDIA GPUs
+        nvidia.com/gpu: "present"
+      containers:
+      - name: ebpf-probe
+        image: {{ .Values.ebpfDaemon.image }}
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - SYS_ADMIN
+              - BPF
+        volumeMounts:
+        - name: sys
+          mountPath: /sys
+          readOnly: true
+        - name: debugfs
+          mountPath: /sys/kernel/debug
+          readOnly: true
+      volumes:
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: debugfs
+        hostPath:
+          path: /sys/kernel/debug

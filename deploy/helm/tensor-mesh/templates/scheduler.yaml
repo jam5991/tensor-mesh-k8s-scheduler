@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tensormesh-scheduler
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.scheduler.replicas }}
+  selector:
+    matchLabels:
+      app: tensormesh-scheduler
+  template:
+    metadata:
+      labels:
+        app: tensormesh-scheduler
+    spec:
+      serviceAccountName: tensormesh-scheduler-sa
+      containers:
+      - name: scheduler
+        image: {{ .Values.scheduler.image }}
+        command:
+        - /usr/local/bin/kube-scheduler-tensormesh
+        - --config=/etc/kubernetes/scheduler-config.yaml
+        - --v=4
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/kubernetes
+      volumes:
+      - name: config-volume
+        configMap:
+          name: tensormesh-scheduler-config

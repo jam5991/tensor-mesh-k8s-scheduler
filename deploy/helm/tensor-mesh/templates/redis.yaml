@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tensormesh-redis
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tensormesh-redis
+  template:
+    metadata:
+      labels:
+        app: tensormesh-redis
+    spec:
+      containers:
+      - name: redis
+        image: {{ .Values.redis.image }}
+        ports:
+        - containerPort: {{ .Values.redis.port }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tensormesh-redis
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+  - port: {{ .Values.redis.port }}
+  selector:
+    app: tensormesh-redis

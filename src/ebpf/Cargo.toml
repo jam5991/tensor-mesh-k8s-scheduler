@@ -1,0 +1,19 @@
+[package]
+name = "tensormesh-ebpf-probe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+aya = { version = "0.11", features = ["async_tokio"] }
+aya-log = "0.1"
+tokio = { version = "1.25", features = ["macros", "rt", "rt-multi-thread", "net", "signal"] }
+tonic = "0.9"
+prost = "0.11"
+log = "0.4"
+env_logger = "0.10"
+
+[build-dependencies]
+tonic-build = "0.9"
+
+# Workspace configuration can go here if we expand
