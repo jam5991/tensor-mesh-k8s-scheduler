@@ -464,41 +464,57 @@ def generate_figure2(pods: List[Pod]):
 
 
 def generate_figure3(df: pd.DataFrame):
-    """Efficiency Frontier: Cost per Token vs P99 Latency."""
-    fig, ax = plt.subplots(figsize=(10, 5))
+    """Efficiency Frontier: dual-axis chart — Cost per Token + P99 Latency vs Load."""
+    fig, ax1 = plt.subplots(figsize=(11, 5.5))
+    ax2 = ax1.twinx()
 
-    bl = df[df.scheduler == 'Baseline'].sort_values('p99_ms')
-    tm = df[df.scheduler == 'TensorMesh'].sort_values('p99_ms')
+    bl = df[df.scheduler == 'Baseline'].sort_values('load_frac')
+    tm = df[df.scheduler == 'TensorMesh'].sort_values('load_frac')
+    load_pct = bl.load_frac.values * 100  # convert to percentage
 
-    ax.plot(bl.p99_ms, bl.cost_per_token, label='Baseline K8s Scheduler',
-            color='#ff4a4a', linestyle='--', linewidth=2.5)
-    ax.plot(tm.p99_ms, tm.cost_per_token, label='TensorMesh Efficiency Frontier',
-            color='#4aff4a', linewidth=2.5)
-    ax.fill_between(bl.p99_ms, tm.cost_per_token.values[:len(bl)],
-                    bl.cost_per_token.values, alpha=0.08, color='#4aff4a',
-                    interpolate=True)
+    # --- Left axis: Cost per Inference Token ---
+    ln1 = ax1.plot(load_pct, bl.cost_per_token * 1000, label='Baseline — Cost',
+                   color='#ff6b6b', linewidth=2.5, linestyle='--')
+    ln2 = ax1.plot(load_pct, tm.cost_per_token.values * 1000, label='TensorMesh — Cost',
+                   color='#51cf66', linewidth=2.5)
+    ax1.fill_between(load_pct, tm.cost_per_token.values * 1000,
+                     bl.cost_per_token.values * 1000,
+                     alpha=0.10, color='#51cf66')
+    ax1.set_xlabel('Cluster Load (%)', fontsize=12)
+    ax1.set_ylabel('Cost per 1K Tokens ($ × 10⁻³)', fontsize=12, color='#cccccc')
+    ax1.tick_params(axis='y', colors='#cccccc')
 
-    # Annotate cost delta at median load
-    mid = len(bl) // 2
-    if mid < len(tm):
-        bl_cost = bl.cost_per_token.iloc[mid]
-        tm_cost = tm.cost_per_token.iloc[mid]
-        delta_pct = (1 - tm_cost / bl_cost) * 100 if bl_cost > 0 else 0
-        ax.annotate(f'{delta_pct:.0f}% Lower Cost',
-                    xy=(bl.p99_ms.iloc[mid], tm_cost),
-                    xytext=(bl.p99_ms.iloc[mid] + 1.5, tm_cost + 0.0005),
-                    arrowprops=dict(facecolor='white', shrink=0.05, width=1, headwidth=6),
-                    color='white', fontsize=11, fontweight='bold')
+    # --- Right axis: P99 Latency ---
+    ln3 = ax2.plot(load_pct, bl.p99_ms, label='Baseline — P99 Latency',
+                   color='#ffa94d', linewidth=2, linestyle=':', alpha=0.9)
+    ln4 = ax2.plot(load_pct, tm.p99_ms.values, label='TensorMesh — P99 Latency',
+                   color='#74c0fc', linewidth=2, alpha=0.9)
+    ax2.set_ylabel('P99 Scheduling Latency (ms)', fontsize=12, color='#aaaaaa')
+    ax2.tick_params(axis='y', colors='#aaaaaa')
 
-    ax.set_xlabel('P99 Latency (ms)')
-    ax.set_ylabel('Cost per Inference Token ($)')
-    ax.set_title('Efficiency Frontier — Cost vs Latency', fontsize=14, color='white')
-    ax.grid(color='#333333', linestyle=':', linewidth=1)
-    ax.legend(loc='upper right', fontsize=11)
+    # Annotate cost savings at 60% load
+    idx_60 = np.argmin(np.abs(bl.load_frac.values - 0.60))
+    bl_cost_60 = bl.cost_per_token.iloc[idx_60]
+    tm_cost_60 = tm.cost_per_token.iloc[idx_60]
+    savings_pct = (1 - tm_cost_60 / bl_cost_60) * 100 if bl_cost_60 > 0 else 0
+    ax1.annotate(f'{savings_pct:.0f}% Lower Cost\nat 60% Load',
+                 xy=(60, tm_cost_60 * 1000),
+                 xytext=(72, (bl_cost_60 * 1000) * 0.7),
+                 arrowprops=dict(facecolor='white', shrink=0.05, width=1.5, headwidth=7),
+                 color='white', fontsize=11, fontweight='bold',
+                 bbox=dict(boxstyle='round,pad=0.3', facecolor='#333333', alpha=0.8))
+
+    # Combined legend
+    lns = ln1 + ln2 + ln3 + ln4
+    labs = [l.get_label() for l in lns]
+    ax1.legend(lns, labs, loc='upper left', fontsize=9, framealpha=0.7)
+
+    ax1.set_title('Efficiency Frontier — Cost & Latency vs Cluster Load', fontsize=14, color='white')
+    ax1.grid(color='#333333', linestyle=':', linewidth=0.8, alpha=0.6)
     fig.tight_layout()
     fig.savefig('docs/assets/figure3.png', dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor())
     plt.close(fig)
-    print(f"  ✓ Figure 3 saved  |  Cost delta annotated at {delta_pct:.0f}%")
+    print(f"  ✓ Figure 3 saved  |  Cost savings at 60% load: {savings_pct:.0f}%")
 
 
 # ---------------------------------------------------------------------------

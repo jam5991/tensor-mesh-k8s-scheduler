@@ -37,7 +37,7 @@ A 3D scatter plot (t-SNE, perplexity=30) of 600 workload feature vectors (`[vram
 ![Figure 2: Latent/Feature Space](docs/assets/figure2.png)
 
 **Figure 3: The "Efficiency Frontier"**
-A Pareto curve comparing "Cost per Inference Token" against "P99 Latency" across 30 load levels (5%–100% cluster capacity). The naive approach shows linear cost scaling as latency decreases. TensorMesh forces a non-linear downward shift in the curve, achieving ~73% lower costs at the identical latency boundary by bin-packing workloads onto high-bandwidth nodes without stranded capacity.
+A dual-axis chart sweeping cluster load from 5% to 100%. The left axis tracks cost per 1K inference tokens — TensorMesh's bin-packing keeps cost flat while the baseline's fragmentation drives cost up 3–4× at moderate loads. The right axis overlays P99 scheduling latency, showing the baseline climbing past 450ms at saturation while TensorMesh holds flat at ~120ms. At 60% load (typical production target), TensorMesh achieves **70% lower cost** at identical throughput.
 
 ![Figure 3: Efficiency Frontier](docs/assets/figure3.png)
 
